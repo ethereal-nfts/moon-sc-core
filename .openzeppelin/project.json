@@ -1,0 +1,20 @@
+{
+  "manifestVersion": "2.2",
+  "contracts": {
+    "MoonPresale": "MoonPresale",
+    "MoonStaking": "MoonStaking",
+    "MoonToken": "MoonToken"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts-ethereum-package": "^2.5.0"
+  },
+  "name": "moon-sc-core",
+  "version": "1.0.0",
+  "telemetryOptIn": true,
+  "compiler": {
+    "manager": "truffle",
+    "compilerSettings": {
+      "optimizer": {}
+    }
+  }
+}
