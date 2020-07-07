@@ -6,7 +6,9 @@ config.MoonToken = {
   name:"MoonCoin",
   symbol:"MOON",
   decimals:18,
-  taxBP:100
+  taxBP:400,
+  burnBP:400,
+  refBP:400
 }
 
 config.MoonStaking = {
@@ -15,14 +17,11 @@ config.MoonStaking = {
   startTime: 1593918000
 }
 
-config.MoonPresale = {
-  buybackBP: 1500,
-  devfundBP: 1000,
-  maxBuyPerAddress: ether("5"),
-  maximumPresaleEther: ether("200"),
-  requiresWhitelisting: true,
-  totalPresaleTokens: ether("40000000"),
-  totalUniswapTokens: ether("24000000")
+config.MoonV2Swap = {
+  bonusBP: 2000,
+  whitelistBonusAdmins: [
+
+  ]
 }
 
 config.Launch = {
