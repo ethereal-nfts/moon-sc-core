@@ -11,7 +11,7 @@ import "./library/BasisPoints.sol";
 import "./MoonStaking.sol";
 
 
-contract MoonToken is Initializable, ERC20Burnable, ERC20Mintable, ERC20Pausable, ERC20Detailed, Ownable {
+contract MoonTokenV2 is Initializable, ERC20Burnable, ERC20Mintable, ERC20Pausable, ERC20Detailed, Ownable {
     using BasisPoints for uint;
     using SafeMath for uint;
 

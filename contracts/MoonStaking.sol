@@ -4,7 +4,7 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
 import "./library/BasisPoints.sol";
 import "./library/PoolManagerRole.sol";
-import "./MoonToken.sol";
+import "./MoonTokenV2.sol";
 
 
 contract MoonStaking is Initializable, PoolManagerRole {
@@ -19,7 +19,7 @@ contract MoonStaking is Initializable, PoolManagerRole {
 
     uint public referralPayoutBP;
 
-    MoonToken private moonToken;
+    MoonTokenV2 private moonToken;
 
     mapping(address => uint) public stakeValue;
     mapping(address => int) private stakerPayouts;
@@ -47,7 +47,7 @@ contract MoonStaking is Initializable, PoolManagerRole {
     event OnReferralExcessClaim(address sender, uint amount);
 
     modifier onlyMoonToken {
-        require(msg.sender == address(moonToken), "Can only be called by MoonToken contract.");
+        require(msg.sender == address(moonToken), "Can only be called by MoonTokenV2 contract.");
         _;
     }
 
@@ -63,7 +63,7 @@ contract MoonStaking is Initializable, PoolManagerRole {
         uint _refBP,
         uint _referralPayoutBP,
         address[] memory _poolManagers,
-        MoonToken _moonToken
+        MoonTokenV2 _moonToken
     ) public initializer {
         startTime = _startTime;
         moonToken = _moonToken;
