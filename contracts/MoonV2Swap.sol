@@ -65,4 +65,8 @@ contract MoonV2Swap is BonusWhitelistRole {
         moonTokenV2.mint(msg.sender, toMint);
         emit OnSwap(msg.sender, amount, toMint);
     }
+
+    function setBonus(address receiver, uint amount) public onlyBonusWhitelist {
+        bonusWhitelist[receiver] = amount;
+    }
 }
