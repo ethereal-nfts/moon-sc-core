@@ -1,27 +1,33 @@
 pragma solidity 0.5.16;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/ownership/Ownable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
 import "./library/BasisPoints.sol";
-import "./interfaces/IStakeHandler.sol";
+import "./library/PoolManagerRole.sol";
+import "./MoonToken.sol";
 
 
-contract MoonStaking is Initializable, Ownable {
+contract MoonStaking is Initializable, PoolManagerRole {
     using BasisPoints for uint;
     using SafeMath for uint;
 
     uint256 constant internal DISTRIBUTION_MULTIPLIER = 2 ** 64;
 
-    uint public stakingTaxBP;
-    uint public unstakingTaxBP;
-    IERC20 private moonToken;
+    uint public taxBP;
+    uint public burnBP;
+    uint public refBP;
+
+    uint public referralPayoutBP;
+
+    MoonToken private moonToken;
 
     mapping(address => uint) public stakeValue;
     mapping(address => int) private stakerPayouts;
 
-    IStakeHandler[] public stakeHandlers;
+    mapping(address => address) public stakerRefferers;
+    mapping(address => uint) public referralPayouts;
+    uint public referralPoolReserved;
+    uint public referralPool;
 
     uint public startTime;
 
@@ -32,10 +38,13 @@ contract MoonStaking is Initializable, Ownable {
     uint private emptyStakeTokens; //These are tokens given to the contract when there are no stakers.
 
     event OnDistribute(address sender, uint amountSent);
-    event OnStake(address sender, uint amount, uint tax);
-    event OnUnstake(address sender, uint amount, uint tax);
-    event OnReinvest(address sender, uint amount, uint tax);
+    event OnReferralDistribute(address sender, uint amount);
+    event OnStake(address sender, uint amount, address refferer);
+    event OnUnstake(address sender, uint amount, uint taxTokens, uint burnTokens, uint referralTokens);
+    event OnReinvest(address sender, uint amount);
     event OnWithdraw(address sender, uint amount);
+    event OnReferralClaim(address sender, uint amount);
+    event OnReferralExcessClaim(address sender, uint amount);
 
     modifier onlyMoonToken {
         require(msg.sender == address(moonToken), "Can only be called by MoonToken contract.");
@@ -48,46 +57,78 @@ contract MoonStaking is Initializable, Ownable {
     }
 
     function initialize(
-        uint _stakingTaxBP,
-        uint _ustakingTaxBP,
         uint _startTime,
-        address owner,
-        IERC20 _moonToken
+        uint _taxBP,
+        uint _burnBP,
+        uint _refBP,
+        uint _referralPayoutBP,
+        address[] memory _poolManagers,
+        MoonToken _moonToken
     ) public initializer {
-        Ownable.initialize(msg.sender);
-        stakingTaxBP = _stakingTaxBP;
-        unstakingTaxBP = _ustakingTaxBP;
         startTime = _startTime;
         moonToken = _moonToken;
-        //Due to issue in oz testing suite, the msg.sender might not be owner
-        _transferOwnership(owner);
+
+        taxBP = _taxBP;
+        burnBP = _burnBP;
+        refBP = _refBP;
+        referralPayoutBP = _referralPayoutBP;
+
+        PoolManagerRole.initialize(address(this));
+        _removePoolManager(address(this));
+
+        for (uint256 i = 0; i < _poolManagers.length; ++i) {
+            _addPoolManager(_poolManagers[i]);
+        }
     }
 
     function stake(uint amount) public whenStakingActive {
-        require(amount >= 1e18, "Must stake at least one MOON.");
+        if (stakerRefferers[msg.sender] != address(0x0)) {
+            stakeWithReferrer(amount, stakerRefferers[msg.sender]);
+        } else {
+            stakeWithReferrer(amount, address(0x0));
+        }
+    }
+
+    function stakeWithReferrer(uint amount, address referrer) public whenStakingActive {
+        require(amount >= 10000e18, "Must stake at least 10000 MOON.");
         require(moonToken.balanceOf(msg.sender) >= amount, "Cannot stake more MOON than you hold unstaked.");
+        if (stakerRefferers[msg.sender] != address(0x0)) {
+            referrer = stakerRefferers[msg.sender]; //User cannot change their referrer.
+        }
+        if (referrer != address(0x0)) {
+            //NOTE: The referral pool gets refreshed from all tx.
+            //So at certain points, may be low/empty.
+            //In which case rewards will need to wait to be pulled.
+            uint referralAmount = amount.mulBP(refBP);
+            referralPayouts[referrer] = referralPayouts[referrer].add(referralAmount);
+            referralPoolReserved = referralPoolReserved.add(referralAmount);
+        }
         if (stakeValue[msg.sender] == 0) totalStakers = totalStakers.add(1);
-        uint tax = _addStake(amount);
+        _addStake(amount);
         require(moonToken.transferFrom(msg.sender, address(this), amount), "Stake failed due to failed transfer.");
-        emit OnStake(msg.sender, amount, tax);
+        emit OnStake(msg.sender, amount, referrer);
     }
 
     function unstake(uint amount) public whenStakingActive {
         require(amount >= 1e18, "Must unstake at least one MOON.");
         require(stakeValue[msg.sender] >= amount, "Cannot unstake more MOON than you have staked.");
-        uint tax = findTaxAmount(amount, unstakingTaxBP);
-        uint earnings = amount.sub(tax);
+
+        (uint taxTokens, uint burnTokens, uint referralTokens) = taxAmount(amount);
+        uint earnings = amount.sub(taxTokens).sub(burnTokens).sub(referralTokens);
+
         if (stakeValue[msg.sender] == amount) totalStakers = totalStakers.sub(1);
         totalStaked = totalStaked.sub(amount);
         stakeValue[msg.sender] = stakeValue[msg.sender].sub(amount);
-        uint payout = profitPerShare.mul(amount).add(tax.mul(DISTRIBUTION_MULTIPLIER));
+        uint payout = profitPerShare.mul(amount).add(taxTokens.mul(DISTRIBUTION_MULTIPLIER));
         stakerPayouts[msg.sender] = stakerPayouts[msg.sender] - uintToInt(payout);
-        for (uint i=0; i < stakeHandlers.length; i++) {
-            stakeHandlers[i].handleUnstake(msg.sender, amount, stakeValue[msg.sender]);
-        }
-        _increaseProfitPerShare(tax);
+
+        _increaseProfitPerShare(taxTokens);
+        moonToken.burn(burnTokens);
+        referralPool.add(referralTokens);
+        emit OnReferralDistribute(msg.sender, amount);
+
         require(moonToken.transferFrom(address(this), msg.sender, earnings), "Unstake failed due to failed transfer.");
-        emit OnUnstake(msg.sender, amount, tax);
+        emit OnUnstake(msg.sender, amount, taxTokens, burnTokens, referralTokens);
     }
 
     function withdraw(uint amount) public whenStakingActive {
@@ -101,8 +142,8 @@ contract MoonStaking is Initializable, Ownable {
         require(dividendsOf(msg.sender) >= amount, "Cannot reinvest more dividends than you have earned.");
         uint payout = amount.mul(DISTRIBUTION_MULTIPLIER);
         stakerPayouts[msg.sender] = stakerPayouts[msg.sender] + uintToInt(payout);
-        uint tax = _addStake(amount);
-        emit OnReinvest(msg.sender, amount, tax);
+        _addStake(amount);
+        emit OnReinvest(msg.sender, amount);
     }
 
     function distribute(uint amount) public {
@@ -116,10 +157,33 @@ contract MoonStaking is Initializable, Ownable {
         emit OnDistribute(msg.sender, amount);
     }
 
+    function claimReferralRewards() public {
+        uint amount = referralPayouts[msg.sender];
+        require(amount != 0, "Must have referral rewards to claim.");
+        require(amount < referralPool, "Not enough tokens in pool. Wait for a refresh.");
+        referralPoolReserved = referralPoolReserved.sub(amount);
+        referralPool = referralPool.sub(amount);
+        referralPayouts[msg.sender] = 0;
+        moonToken.transfer(msg.sender, amount);
+        emit OnReferralClaim(msg.sender, amount);
+    }
+
+    function claimExcessFromReferralPool(uint amount) public onlyPoolManager {
+        require(amount <= referralPool.sub(referralPoolReserved), "Amount is greater than excess.");
+        referralPool = referralPool.sub(amount);
+        moonToken.transfer(msg.sender, amount);
+        emit OnReferralExcessClaim(msg.sender, amount);
+    }
+
     function handleTaxDistribution(uint amount) public onlyMoonToken {
         totalDistributions = totalDistributions.add(amount);
         _increaseProfitPerShare(amount);
         emit OnDistribute(msg.sender, amount);
+    }
+
+    function handleReferralDistribution(uint amount) public onlyMoonToken {
+        referralPool.add(amount);
+        emit OnReferralDistribute(msg.sender, amount);
     }
 
     function dividendsOf(address staker) public view returns (uint) {
@@ -127,32 +191,11 @@ contract MoonStaking is Initializable, Ownable {
             .div(DISTRIBUTION_MULTIPLIER);
     }
 
-    function findTaxAmount(uint value, uint taxBP) public pure returns (uint) {
-        return value.mulBP(taxBP);
-    }
-
-    function numberStakeHandlersRegistered() public view returns (uint) {
-        return stakeHandlers.length;
-    }
-
-    function registerStakeHandler(IStakeHandler sc) public onlyOwner {
-        stakeHandlers.push(sc);
-    }
-
-    function unregisterStakeHandler(uint index) public onlyOwner {
-        IStakeHandler sc = stakeHandlers[stakeHandlers.length-1];
-        stakeHandlers.pop();
-        stakeHandlers[index] = sc;
-    }
-
-    function setStakingBP(uint valueBP) public onlyOwner {
-        require(valueBP < 10000, "Tax connot be over 100% (10000 BP)");
-        stakingTaxBP = valueBP;
-    }
-
-    function setUnstakingBP(uint valueBP) public onlyOwner {
-        require(valueBP < 10000, "Tax connot be over 100% (10000 BP)");
-        unstakingTaxBP = valueBP;
+    function taxAmount(uint value) public view returns (uint tax, uint burn, uint referral) {
+        tax = value.mulBP(taxBP);
+        burn = value.mulBP(burnBP);
+        referral = value.mulBP(refBP);
+        return (tax, burn, referral);
     }
 
     function uintToInt(uint val) internal pure returns (int) {
@@ -163,17 +206,11 @@ contract MoonStaking is Initializable, Ownable {
         }
     }
 
-    function _addStake(uint amount) internal returns (uint tax) {
-        tax = findTaxAmount(amount, stakingTaxBP);
-        uint stakeAmount = amount.sub(tax);
-        totalStaked = totalStaked.add(stakeAmount);
-        stakeValue[msg.sender] = stakeValue[msg.sender].add(stakeAmount);
-        for (uint i=0; i < stakeHandlers.length; i++) {
-            stakeHandlers[i].handleStake(msg.sender, stakeAmount, stakeValue[msg.sender]);
-        }
-        uint payout = profitPerShare.mul(stakeAmount);
+    function _addStake(uint amount) internal {
+        totalStaked = totalStaked.add(amount);
+        stakeValue[msg.sender] = stakeValue[msg.sender].add(amount);
+        uint payout = profitPerShare.mul(amount);
         stakerPayouts[msg.sender] = stakerPayouts[msg.sender] + uintToInt(payout);
-        _increaseProfitPerShare(tax);
     }
 
     function _increaseProfitPerShare(uint amount) internal {
