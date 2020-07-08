@@ -3,57 +3,108 @@ const { expectRevert, time, BN, ether, balance } = require("@openzeppelin/test-h
 const {expect} = require("chai")
 const config = require("../config")
 
-const MoonToken = contract.fromArtifact("MoonToken")
-const MoonStaking = contract.fromArtifact("MoonStaking")
+SECONDS_PER_DAY = 86400
 
-const SECONDS_PER_DAY = 86400
+const MoonTokenV2 = contract.fromArtifact("MoonTokenV2")
+const MoonStaking = contract.fromArtifact("MoonStaking")
+const MoonV2Swap = contract.fromArtifact("MoonV2Swap")
+const Mock_MoonTokenV1 = contract.fromArtifact("Mock_MoonTokenV1")
 
 const owner = accounts[0]
 const stakers = [accounts[1],accounts[2],accounts[3],accounts[4]]
 const nonStakerAccount = accounts[5]
 const distributionAccount = accounts[6]
+const referrers = [accounts[7],accounts[8]]
 
-describe("MoonStaking", function() {
+describe("MoonTokenV2", function() {
   before(async function() {
-    const tokenParams = config.MoonToken
+    const tokenParams = config.MoonTokenV2
     const stakingParams = config.MoonStaking
+    const swapParams = config.MoonV2Swap
 
-    this.moonToken = await MoonToken.new()
+    this.moonTokenV2 = await MoonTokenV2.new()
+    this.moonTokenV1 = await Mock_MoonTokenV1.new()
     this.moonStaking = await MoonStaking.new()
+    this.moonV2Swap  = await MoonV2Swap.new()
 
-    await this.moonToken.initialize(
+    await this.moonTokenV1.initialize(owner)
+
+    await this.moonTokenV2.initialize(
       tokenParams.name,
       tokenParams.symbol,
       tokenParams.decimals,
-      owner,
       tokenParams.taxBP,
-      this.moonStaking.address
+      tokenParams.burnBP,
+      tokenParams.refBP,
+      this.moonStaking.address,
+      this.moonV2Swap.address
     )
+
     await this.moonStaking.initialize(
-      stakingParams.stakingTaxBP,
-      stakingParams.unstakingTaxBP,
       stakingParams.startTime,
-      owner,
-      this.moonToken.address
+      stakingParams.taxBP,
+      stakingParams.burnBP,
+      stakingParams.refBP,
+      stakingParams.referralPayoutBP,
+      stakingParams.referralPoolAdmins,
+      this.moonTokenV2.address
+    )
+
+    this.moonV2Swap.initialize(
+      swapParams.bonusBP,
+      swapParams.whitelistBonusAdmins,
+      this.moonTokenV1.address,
+      this.moonTokenV2.address
     )
 
     await Promise.all([
-      this.moonToken.mint(stakers[0],ether('25'),{from: owner}),
-      this.moonToken.mint(stakers[1],ether('25'),{from: owner}),
-      this.moonToken.mint(stakers[2],ether('25'),{from: owner}),
-      this.moonToken.mint(stakers[3],ether('25'),{from: owner}),
-      this.moonToken.mint(nonStakerAccount,ether('25'),{from: owner}),
-      this.moonToken.mint(distributionAccount,ether('25'),{from: owner}),
+      this.moonTokenV1.mint(stakers[0],ether('250000'),{from: owner}),
+      this.moonTokenV1.mint(stakers[1],ether('250000'),{from: owner}),
+      this.moonTokenV1.mint(stakers[2],ether('250000'),{from: owner}),
+      this.moonTokenV1.mint(stakers[3],ether('250000'),{from: owner}),
+      this.moonTokenV1.mint(nonStakerAccount,ether('250000'),{from: owner}),
+      this.moonTokenV1.mint(distributionAccount,ether('250000'),{from: owner}),
+    ])
+    await Promise.all([
+      this.moonTokenV1.mint(stakers[0],ether('250000'),{from: owner}),
+      this.moonTokenV1.mint(stakers[1],ether('250000'),{from: owner}),
+      this.moonTokenV1.mint(stakers[2],ether('250000'),{from: owner}),
+      this.moonTokenV1.mint(stakers[3],ether('250000'),{from: owner}),
+      this.moonTokenV1.mint(nonStakerAccount,ether('250000'),{from: owner}),
+      this.moonTokenV1.mint(distributionAccount,ether('250000'),{from: owner})
+    ])
+
+    await Promise.all([
+      this.moonTokenV1.approve(this.moonV2Swap.address,ether('250000'),{from: stakers[0]}),
+      this.moonTokenV1.approve(this.moonV2Swap.address,ether('250000'),{from: stakers[1]}),
+      this.moonTokenV1.approve(this.moonV2Swap.address,ether('250000'),{from: stakers[2]}),
+      this.moonTokenV1.approve(this.moonV2Swap.address,ether('250000'),{from: stakers[3]}),
+      this.moonTokenV1.approve(this.moonV2Swap.address,ether('250000'),{from: nonStakerAccount}),
+      this.moonTokenV1.approve(this.moonV2Swap.address,ether('250000'),{from: distributionAccount})
+    ])
+
+    await Promise.all([
+      this.moonV2Swap.swap(ether('250000'),{from: stakers[0]}),
+      this.moonV2Swap.swap(ether('250000'),{from: stakers[1]}),
+      this.moonV2Swap.swap(ether('250000'),{from: stakers[2]}),
+      this.moonV2Swap.swap(ether('250000'),{from: stakers[3]}),
+      this.moonV2Swap.swap(ether('250000'),{from: nonStakerAccount}),
+      this.moonV2Swap.swap(ether('250000'),{from: distributionAccount})
     ])
   })
 
   describe("Stateles", function() {
-    describe("#findTaxAmount", function(){
-      it("Should return taxBP/10000 of value passed.", async function() {
-        const taxBP = config.MoonStaking.stakingTaxBP
-        const tax = await this.moonStaking.findTaxAmount(ether("1"),new BN(taxBP))
-        const expectedTax = ether("1").mul(new BN(taxBP)).div(new BN(10000))
-        expect(tax.toString()).to.equal(expectedTax.toString())
+    describe("#taxAmount", function(){
+      it("Should return tax, burn, and referral at correct BasisPoints ratio.", async function() {
+        const {tax, burn, referral} = await this.moonTokenV2.taxAmount(ether("10"))
+
+        const expectedTax = ether("10").mul(new BN(config.MoonTokenV2.taxBP)).div(new BN(10000))
+        const expectedBurn = ether("10").mul(new BN(config.MoonTokenV2.burnBP)).div(new BN(10000))
+        const expectedRef = ether("10").mul(new BN(config.MoonTokenV2.refBP)).div(new BN(10000))
+
+        expect(expectedTax.toString()).to.equal(tax.toString())
+        expect(expectedBurn.toString()).to.equal(burn.toString())
+        expect(expectedRef.toString()).to.equal(referral.toString())
       })
     })
   })
@@ -62,8 +113,18 @@ describe("MoonStaking", function() {
     describe("#stake", function(){
       it("Should revert", async function() {
         const staker = stakers[0]
-        expectRevert(
+        await expectRevert(
           this.moonStaking.stake(ether("1"),{from:staker}),
+          "Staking not yet started."
+        )
+      })
+    })
+    describe("#stakeWithReferrer", function(){
+      it("Should revert", async function() {
+        const staker = stakers[0]
+        const referrer = referrers[0]
+        await expectRevert(
+          this.moonStaking.stakeWithReferrer(ether("1"),referrer,{from:staker}),
           "Staking not yet started."
         )
       })
@@ -71,7 +132,7 @@ describe("MoonStaking", function() {
     describe("#unstake", function(){
       it("Should revert", async function() {
         const staker = stakers[0]
-        expectRevert(
+        await expectRevert(
           this.moonStaking.unstake(ether("1"),{from:staker}),
           "Staking not yet started."
         )
@@ -80,7 +141,7 @@ describe("MoonStaking", function() {
     describe("#withdraw", function(){
       it("Should revert", async function() {
         const staker = stakers[0]
-        expectRevert(
+        await expectRevert(
           this.moonStaking.withdraw(ether("1"),{from:staker}),
           "Staking not yet started."
         )
@@ -89,7 +150,7 @@ describe("MoonStaking", function() {
     describe("#reinvest", function(){
       it("Should revert", async function() {
         const staker = stakers[0]
-        expectRevert(
+        await expectRevert(
           this.moonStaking.reinvest(ether("1"),{from:staker}),
           "Staking not yet started."
         )
@@ -108,134 +169,98 @@ describe("MoonStaking", function() {
     describe("#stake", function(){
       it("Should revert if less than 1 token", async function() {
         const staker = stakers[0]
-        expectRevert(
+        await expectRevert(
           this.moonStaking.stake(ether("1").sub(new BN(1)),{from:staker}),
-          "Must stake at least one MOON."
+          "Must stake at least 10000 MOON."
         )
-        expectRevert(
+        await expectRevert(
           this.moonStaking.stake(0,{from:staker}),
-          "Must stake at least one MOON."
+          "Must stake at least 10000 MOON."
         )
-        expectRevert(
+        await expectRevert(
           this.moonStaking.stake(new BN(1),{from:staker}),
-          "Must stake at least one MOON."
+          "Must stake at least 10000 MOON."
         )
       })
       it("Should increase totalStakers by 1", async function() {
         const staker = stakers[0]
         const initialTotalStakers = await this.moonStaking.totalStakers()
-        await this.moonStaking.stake(ether("2"),{from:staker})
+        await this.moonStaking.stake(ether("20000"),{from:staker})
         const finalTotalStakers = await this.moonStaking.totalStakers()
         expect(finalTotalStakers.toString())
           .to.equal(initialTotalStakers.add(new BN(1)).toString())
       })
       it("Should revert if staking more tokens than held", async function() {
         const staker = stakers[0]
-        const balance = await this.moonToken.balanceOf(staker)
+        const balance = await this.moonTokenV2.balanceOf(staker)
         expect(balance.toString()).to.not.equal(new BN(0),{from:staker})
-        expectRevert(
+        await expectRevert(
           this.moonStaking.stake(balance.add(new BN(1)),{from:staker}),
           "Cannot stake more MOON than you hold unstaked."
         )
-        expectRevert(
-          this.moonStaking.stake(balance.add(ether("1000000000")),{from:staker}),
+        await expectRevert(
+          this.moonStaking.stake(balance.add(ether("10000000000000")),{from:staker}),
           "Cannot stake more MOON than you hold unstaked."
         )
       })
       it("Should decrease stakers balance by value", async function() {
         const staker = stakers[0]
-        const value = ether("2.1")
-        const initialStakersTokens = await this.moonToken.balanceOf(staker)
+        const value = ether("21000")
+        const initialStakersTokens = await this.moonTokenV2.balanceOf(staker)
         await this.moonStaking.stake(value,{from:staker})
-        const finalStakersTokens = await this.moonToken.balanceOf(staker)
+        const finalStakersTokens = await this.moonTokenV2.balanceOf(staker)
         expect(finalStakersTokens.toString())
           .to.equal(initialStakersTokens.sub(value).toString())
       })
       it("Should not change totalStakers", async function() {
         const staker = stakers[0]
         const initialTotalStakers = await this.moonStaking.totalStakers()
-        await this.moonStaking.stake(ether("2"),{from:staker})
+        await this.moonStaking.stake(ether("20000"),{from:staker})
         const finalTotalStakers = await this.moonStaking.totalStakers()
         expect(finalTotalStakers.toString())
           .to.equal(initialTotalStakers.toString())
       })
-      it("Should increase totalStaked by value minus tax", async function() {
+      it("Should increase totalStaked by value", async function() {
         const staker = stakers[0]
-        const value = ether("2.1")
-        const tax = await this.moonStaking.findTaxAmount(value,config.MoonStaking.stakingTaxBP)
+        const value = ether("21000")
         const initialTotalStaked = await this.moonStaking.totalStaked()
         await this.moonStaking.stake(value,{from:staker})
         const finalTotalStaked = await this.moonStaking.totalStaked()
         expect(finalTotalStaked.toString())
-          .to.equal(initialTotalStaked.add(value).sub(tax).toString())
+          .to.equal(initialTotalStaked.add(value).toString())
       })
-      it("Should increase sender's staked amount by value minus tax", async function() {
+      it("Should increase sender's staked amount by value", async function() {
         const staker = stakers[0]
-        const value = ether("2.1")
-        const tax = await this.moonStaking.findTaxAmount(value,config.MoonStaking.stakingTaxBP)
+        const value = ether("21000")
         const initialStakerBalance = await this.moonStaking.stakeValue(staker)
         await this.moonStaking.stake(value,{from:staker})
         const finalStakerBalance = await this.moonStaking.stakeValue(staker)
         expect(finalStakerBalance.toString())
-          .to.equal(initialStakerBalance.add(value).sub(tax).toString())
+          .to.equal(initialStakerBalance.add(value).toString())
       })
-      it("For single staker, dividends+stakeValue[staker] should be contract balance.", async function() {
+      it("For single staker, stakeValue[staker]+dividendsOf(staker)+referralPool should be contract balance.", async function() {
         const staker = stakers[0]
-        const balance = await this.moonToken.balanceOf(this.moonStaking.address)
+        const balance = await this.moonTokenV2.balanceOf(this.moonStaking.address)
         const stake = await this.moonStaking.stakeValue(staker)
         const divis = await this.moonStaking.dividendsOf(staker)
-        expect(stake.add(divis).toString())
-          .to.equal(balance.sub(new BN(1)).toString())
-      })
-      it("When second staker doubles total staked, first stakers dividends should increase by half of tax.", async function() {
-        const stakerFirst = stakers[0]
-        const stakerSecond = stakers[1]
-        const totalStaked = await this.moonStaking.totalStaked()
-        const initialDivis = await this.moonStaking.dividendsOf(stakerFirst)
-        const value = totalStaked.mul(new BN(10000)).div((new BN(10000)).sub(new BN(config.MoonStaking.stakingTaxBP)))
-        const tax = await this.moonStaking.findTaxAmount(value,config.MoonStaking.stakingTaxBP)
-        await this.moonStaking.stake(value,{from:stakerSecond})
-        const finalDivis = await this.moonStaking.dividendsOf(stakerFirst)
-        const stakerSecondDivis = await this.moonStaking.dividendsOf(stakerSecond)
-        expect(finalDivis.sub(initialDivis).toString())
-          .to.equal(tax.div(new BN(2)).toString())
-        expect(stakerSecondDivis.toString())
-          .to.equal(tax.div(new BN(2)).sub(new BN(1)).toString())
-      })
-      it("When third staker increases total staked by 50%, others stakers dividends should increase by third of tax.", async function() {
-        const staker1 = stakers[0]
-        const staker2 = stakers[1]
-        const staker3 = stakers[2]
-        const totalStaked = await this.moonStaking.totalStaked()
-        const initialDivisStaker1 = await this.moonStaking.dividendsOf(staker1)
-        const initialDivisStaker2 = await this.moonStaking.dividendsOf(staker2)
-        const value = totalStaked.div(new BN(2)).mul(new BN(10000)).div((new BN(10000)).sub(new BN(config.MoonStaking.stakingTaxBP)))
-        const tax = await this.moonStaking.findTaxAmount(value,config.MoonStaking.stakingTaxBP)
-        await this.moonStaking.stake(value,{from:staker3})
-        const finalDivisStaker1 = await this.moonStaking.dividendsOf(staker1)
-        const finalDivisStaker2 = await this.moonStaking.dividendsOf(staker2)
-        const finalDivisStaker3 = await this.moonStaking.dividendsOf(staker3)
-        expect(finalDivisStaker1.sub(initialDivisStaker1).toString())
-          .to.equal(tax.div(new BN(3)).toString())
-        expect(finalDivisStaker2.sub(initialDivisStaker2).toString())
-          .to.equal(tax.div(new BN(3)).toString())
-        expect(finalDivisStaker3.toString())
-          .to.equal(tax.div(new BN(3)).sub(new BN(1)).toString())
+        const refPool = await this.moonStaking.referralPool()
+        expect(stake.add(divis).add(refPool).toString())
+          .to.equal(balance.toString())
       })
     })
 
     describe("#unstake", function(){
       it("Should revert if less than 1 token", async function() {
         const staker = stakers[0]
-        expectRevert(
+        await expectRevert(
           this.moonStaking.unstake(ether("1").sub(new BN(1)),{from:staker}),
           "Must unstake at least one MOON."
         )
-        expectRevert(
+        await expectRevert(
           this.moonStaking.unstake(0,{from:staker}),
           "Must unstake at least one MOON."
         )
-        expectRevert(
+        await expectRevert(
           this.moonStaking.unstake(new BN(1),{from:staker}),
           "Must unstake at least one MOON."
         )
@@ -244,37 +269,37 @@ describe("MoonStaking", function() {
         const staker = stakers[0]
         const balance = await this.moonStaking.stakeValue(staker)
         expect(balance.toString()).to.not.equal(new BN(0),{from:staker})
-        expectRevert(
+        await expectRevert(
           this.moonStaking.unstake(balance.add(new BN(1)),{from:staker}),
           "Cannot unstake more MOON than you have staked."
         )
-        expectRevert(
-          this.moonStaking.unstake(balance.add(ether("1000000000")),{from:staker}),
+        await expectRevert(
+          this.moonStaking.unstake(balance.add(ether("10000000000000")),{from:staker}),
           "Cannot unstake more MOON than you have staked."
         )
       })
       it("Should decrease totalStaked balance by value", async function() {
         const staker = stakers[0]
-        const value = ether("1")
+        const value = ether("10000")
         const initialTotalStaked = await this.moonStaking.totalStaked()
         await this.moonStaking.unstake(value,{from:staker})
         const finalTotalStaked = await this.moonStaking.totalStaked()
         expect(finalTotalStaked.toString())
           .to.equal(initialTotalStaked.sub(value).toString())
       })
-      it("Should increase stakers balance by value minus tax", async function() {
+      it("Should increase stakers balance by value minus tax+burn+referral", async function() {
         const staker = stakers[0]
-        const value = ether("1")
-        const tax = await this.moonStaking.findTaxAmount(value,new BN(config.MoonStaking.unstakingTaxBP))
-        const initialStakerBalance = await this.moonToken.balanceOf(staker)
+        const value = ether("10000")
+        const {tax, burn, referral} = await this.moonStaking.taxAmount(value,new BN(config.MoonStaking.unstakingTaxBP))
+        const initialStakerBalance = await this.moonTokenV2.balanceOf(staker)
         await this.moonStaking.unstake(value,{from:staker})
-        const finalStakerBalance = await this.moonToken.balanceOf(staker)
+        const finalStakerBalance = await this.moonTokenV2.balanceOf(staker)
         expect(finalStakerBalance.toString())
-          .to.equal(initialStakerBalance.add(value).sub(tax).toString())
+          .to.equal(initialStakerBalance.add(value).sub(tax).sub(burn).sub(referral).toString())
       })
       it("Should decrease sender's staked amount by value", async function() {
         const staker = stakers[0]
-        const value = ether("1")
+        const value = ether("10000")
         const initialStakerBalance = await this.moonStaking.stakeValue(staker)
         await this.moonStaking.unstake(value,{from:staker})
         const finalStakerBalance = await this.moonStaking.stakeValue(staker)
@@ -289,7 +314,7 @@ describe("MoonStaking", function() {
           const initialStakerDivis = await this.moonStaking.dividendsOf(staker)
           const stakerValue = await this.moonStaking.stakeValue(staker)
           const initialTotalStakers = await this.moonStaking.totalStakers()
-          const tax = await this.moonStaking.findTaxAmount(stakerValue,new BN(config.MoonStaking.unstakingTaxBP))
+          const {tax, burn, referral} = await this.moonStaking.taxAmount(stakerValue,new BN(config.MoonStaking.unstakingTaxBP))
           await this.moonStaking.unstake(stakerValue,{from:staker})
           const finalTotalStakers = await this.moonStaking.totalStakers()
           const finalStakerDivis = await this.moonStaking.dividendsOf(staker)
@@ -304,11 +329,11 @@ describe("MoonStaking", function() {
       it("Should increase other stakers dividends by tax/totalStaked * stakeValue", async function() {
         const staker = stakers[1]
         const unstaker = stakers[2]
-        const value = ether("1")
-        const tax = await this.moonStaking.findTaxAmount(value,new BN(config.MoonStaking.unstakingTaxBP))
+        const value = ether("10000")
+        const {tax, burn, referral} = await this.moonStaking.taxAmount(value,new BN(config.MoonStaking.unstakingTaxBP))
         const stakerShares = await this.moonStaking.stakeValue(staker)
         const initialStakerDivis = await this.moonStaking.dividendsOf(staker)
-        await this.moonStaking.unstake(ether("1"),{from:unstaker})
+        await this.moonStaking.unstake(ether("10000"),{from:unstaker})
         const finalStakerDivis = await this.moonStaking.dividendsOf(staker)
         const totalStaked = await this.moonStaking.totalStaked()
         expect(tax.mul(stakerShares).div(totalStaked).toString())
@@ -318,20 +343,20 @@ describe("MoonStaking", function() {
 
     describe("#distribution", function(){
       before(async function() {
-        await this.moonStaking.stake(ether("1"),{from:stakers[0]})
-        await this.moonStaking.stake(ether("1.5"),{from:stakers[1]})
-        await this.moonStaking.stake(ether("1.2"),{from:stakers[2]})
-        await this.moonStaking.stake(ether("9.1"),{from:stakers[3]})
+        await this.moonStaking.stake(ether("10000"),{from:stakers[0]})
+        await this.moonStaking.stake(ether("15000"),{from:stakers[1]})
+        await this.moonStaking.stake(ether("12000"),{from:stakers[2]})
+        await this.moonStaking.stake(ether("91000"),{from:stakers[3]})
       })
       it("Should revert if distributing more than sender's balance", async function() {
-        const balance = await this.moonToken.balanceOf(distributionAccount)
-        expectRevert(
+        const balance = await this.moonTokenV2.balanceOf(distributionAccount)
+        await expectRevert(
           this.moonStaking.distribute(balance.add(new BN(1)),{from: distributionAccount}),
           "Cannot distribute more MOON than you hold unstaked."
         )
       })
       it("Should increase totalDistributions by value", async function(){
-        const value = ether("1")
+        const value = ether("10000")
         const totalDistributionsInitial = await this.moonStaking.totalDistributions()
         await this.moonStaking.distribute(value,{from: distributionAccount})
         const totalDistributionsFinal = await this.moonStaking.totalDistributions()
@@ -340,7 +365,7 @@ describe("MoonStaking", function() {
       })
       it("Should increase other stakers dividends by distribution/totalStaked * stakeValue", async function() {
         const staker = stakers[1]
-        const value = ether("1")
+        const value = ether("10000")
         const stakerShares = await this.moonStaking.stakeValue(staker)
         const initialStakerDivis = await this.moonStaking.dividendsOf(staker)
         await this.moonStaking.distribute(value,{from:distributionAccount})
@@ -354,22 +379,22 @@ describe("MoonStaking", function() {
       it("Should revert if withdrawing more than sender's dividends", async function() {
         const staker = stakers[0]
         const balance = await this.moonStaking.dividendsOf(staker)
-        expectRevert(
+        await expectRevert(
           this.moonStaking.withdraw(balance.add(new BN(1)),{from: staker}),
           "Cannot withdraw more dividends than you have earned."
         )
       })
       it("Should increase senders balance by value.", async function() {
-        const value = ether("0.1")
+        const value = ether("1000")
         const staker = stakers[0]
-        const balanceInitial = await this.moonToken.balanceOf(staker)
+        const balanceInitial = await this.moonTokenV2.balanceOf(staker)
         this.moonStaking.withdraw(value,{from: staker})
-        const balanceFinal = await this.moonToken.balanceOf(staker)
+        const balanceFinal = await this.moonTokenV2.balanceOf(staker)
         expect(balanceFinal.sub(balanceInitial).toString())
           .to.equal(value.toString())
       })
       it("Should decrease senders dividends by value.", async function() {
-        const value = ether("0.1")
+        const value = ether("1000")
         const staker = stakers[3]
         const divisInitial = await this.moonStaking.dividendsOf(staker)
         this.moonStaking.withdraw(value,{from: staker})
@@ -384,58 +409,54 @@ describe("MoonStaking", function() {
         const staker = stakers[1]
         const divis = await this.moonStaking.dividendsOf(staker)
         expect(divis.toString()).to.not.equal(new BN(0),{from:staker})
-        expectRevert(
+        await expectRevert(
           this.moonStaking.reinvest(divis.add(new BN(1)),{from:staker}),
           "Cannot reinvest more dividends than you have earned."
         )
-        expectRevert(
+        await expectRevert(
           this.moonStaking.reinvest(divis.add(ether("1000000000")),{from:staker}),
           "Cannot reinvest more dividends than you have earned."
         )
       })
-      it("Should decrease stakers dividends by value but add tax/totalStaked * stakeValue.", async function() {
+      it("Should decrease stakers dividends by value and add stakeValue.", async function() {
         const staker = stakers[1]
-        const value = ether("0.1")
-        const tax = await this.moonStaking.findTaxAmount(value,config.MoonStaking.stakingTaxBP)
+        const value = ether("1000")
         const initialStakerDivis = await this.moonStaking.dividendsOf(staker)
         await this.moonStaking.reinvest(value,{from:staker})
         const finalStakerDivis = await this.moonStaking.dividendsOf(staker)
         const totalStaked = await this.moonStaking.totalStaked()
         const stakerShares = await this.moonStaking.stakeValue(staker)
         expect(initialStakerDivis.sub(finalStakerDivis).toString())
-          .to.equal(value.sub(tax.mul(stakerShares).div(totalStaked)).toString())
+          .to.equal(value.sub(stakerShares.div(totalStaked)).toString())
       })
-      it("Should increase totalStaked by value minus tax", async function() {
+      it("Should increase totalStaked by value", async function() {
         const staker = stakers[1]
-        const value = ether("0.1")
-        const tax = await this.moonStaking.findTaxAmount(value,config.MoonStaking.stakingTaxBP)
+        const value = ether("1000")
         const initialTotalStaked = await this.moonStaking.totalStaked()
         await this.moonStaking.reinvest(value,{from:staker})
         const finalTotalStaked = await this.moonStaking.totalStaked()
         expect(finalTotalStaked.toString())
-          .to.equal(initialTotalStaked.add(value).sub(tax).toString())
+          .to.equal(initialTotalStaked.add(value).toString())
       })
       it("Should increase sender's staked amount by value minus tax", async function() {
         const staker = stakers[1]
-        const value = ether("0.01")
-        const tax = await this.moonStaking.findTaxAmount(value,config.MoonStaking.stakingTaxBP)
+        const value = ether("100")
         const initialStakerBalance = await this.moonStaking.stakeValue(staker)
         await this.moonStaking.reinvest(value,{from:staker})
         const finalStakerBalance = await this.moonStaking.stakeValue(staker)
         expect(finalStakerBalance.toString())
-          .to.equal(initialStakerBalance.add(value).sub(tax).toString())
+          .to.equal(initialStakerBalance.add(value).toString())
       })
-      it("Should increase other stakers dividends by tax/totalStaked * stakeValue", async function() {
+      it("Should not change other stakers dividends", async function() {
         const reinvester = stakers[1]
         const staker = stakers[2]
-        const value = ether("0.1")
-        const tax = await this.moonStaking.findTaxAmount(value,config.MoonStaking.stakingTaxBP)
+        const value = ether("1000")
         const stakerShares = await this.moonStaking.stakeValue(staker)
         const initialStakerDivis = await this.moonStaking.dividendsOf(staker)
         await this.moonStaking.reinvest(value,{from:reinvester})
         const finalStakerDivis = await this.moonStaking.dividendsOf(staker)
         const totalStaked = await this.moonStaking.totalStaked()
-        expect(tax.mul(stakerShares).div(totalStaked).toString())
+        expect(stakerShares.div(totalStaked).toString())
           .to.equal(finalStakerDivis.sub(initialStakerDivis).toString())
       })
     })

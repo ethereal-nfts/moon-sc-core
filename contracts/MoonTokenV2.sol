@@ -57,7 +57,7 @@ contract MoonTokenV2 is Initializable, ERC20Burnable, ERC20Mintable, ERC20Detail
     function transferFrom(address sender, address recipient, uint amount) public returns (bool) {
         _transferWithTax(sender, recipient, amount);
         //Moonstaking SC is trusted, no approve required
-        if (sender == address(moonStaking)) return true;
+        if (msg.sender == address(moonStaking)) return true;
         approve
         (
             msg.sender,
