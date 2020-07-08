@@ -20,10 +20,10 @@ contract MoonV2Swap is BonusWhitelistRole {
     event OnSwap(address swapper, uint v1Burned, uint v2Minted);
 
     function initialize(
-        ERC20Burnable _moonTokenV1,
-        MoonTokenV2 _moonTokenV2,
         uint _bonusBP,
-        address[] memory _bonusWhitelistAdmins
+        address[] memory _bonusWhitelistAdmins,
+        ERC20Burnable _moonTokenV1,
+        MoonTokenV2 _moonTokenV2
     ) public initializer {
         moonTokenV1 = _moonTokenV1;
         moonTokenV2 = _moonTokenV2;
@@ -44,7 +44,7 @@ contract MoonV2Swap is BonusWhitelistRole {
     function swap(uint amount) public {
         require(amount > 0, "Must swap at least 1 wei of MoonV1.");
         //NOTE: Requires MoonV2Swap have Minter role on MoonTokenV2.
-        //NOTE: Requires user has approved MoonV2Swap to transfer MoonV1 tokens.
+        //NOTE: Requires user has approved MoonV1 for burnFrom.
         require(amount <= moonTokenV1.balanceOf(msg.sender), "Cannot swap more than balance.");
         moonTokenV1.burnFrom(msg.sender, amount);
 

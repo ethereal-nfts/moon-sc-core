@@ -5,13 +5,13 @@ import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20Deta
 import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20Mintable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20Pausable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/ownership/Ownable.sol";
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
 import "./library/BasisPoints.sol";
 import "./MoonStaking.sol";
+import "./MoonV2Swap.sol";
 
 
-contract MoonTokenV2 is Initializable, ERC20Burnable, ERC20Mintable, ERC20Pausable, ERC20Detailed, Ownable {
+contract MoonTokenV2 is Initializable, ERC20Burnable, ERC20Mintable, ERC20Detailed {
     using BasisPoints for uint;
     using SafeMath for uint;
 
@@ -24,30 +24,22 @@ contract MoonTokenV2 is Initializable, ERC20Burnable, ERC20Mintable, ERC20Pausab
     mapping(address => bool) private trustedContracts;
 
     function initialize(
-        string memory name, string memory symbol, uint8 decimals, address owner,
+        string memory name, string memory symbol, uint8 decimals,
         uint _taxBP, uint _burnBP, uint _refBP,
-        MoonStaking _moonStaking
+        MoonStaking _moonStaking,
+        MoonV2Swap _moonV2Swap
     ) public initializer {
         taxBP = _taxBP;
         burnBP = _burnBP;
         refBP = _refBP;
-
-        Ownable.initialize(msg.sender);
+        moonStaking = _moonStaking;
 
         ERC20Detailed.initialize(name, symbol, decimals);
 
         ERC20Mintable.initialize(address(this));
         _removeMinter(address(this));
-        _addMinter(owner);
+        _addMinter(address(_moonV2Swap));
 
-        ERC20Pausable.initialize(address(this));
-        _removePauser(address(this));
-        _addPauser(owner);
-
-        moonStaking = _moonStaking;
-
-        //Due to issue in oz testing suite, the msg.sender might not be owner
-        _transferOwnership(owner);
     }
 
     function taxAmount(uint value) public view returns (uint tax, uint burn, uint referral) {
@@ -64,7 +56,8 @@ contract MoonTokenV2 is Initializable, ERC20Burnable, ERC20Mintable, ERC20Pausab
 
     function transferFrom(address sender, address recipient, uint amount) public returns (bool) {
         _transferWithTax(sender, recipient, amount);
-        if (address == address(moonStaking)) return true; //Moonstaking SC is trusted, no approve required
+        //Moonstaking SC is trusted, no approve required
+        if (sender == address(moonStaking)) return true;
         approve
         (
             msg.sender,
@@ -84,7 +77,7 @@ contract MoonTokenV2 is Initializable, ERC20Burnable, ERC20Mintable, ERC20Pausab
         uint tokensToTransfer = amount.sub(taxTokens).sub(burnTokens).sub(referralTokens);
 
         _transfer(sender, address(moonStaking), taxTokens.add(referralTokens));
-        burn(burnTokens);
+        _burn(sender, burnTokens);
         _transfer(sender, recipient, tokensToTransfer);
         moonStaking.handleTaxDistribution(taxTokens);
         moonStaking.handleReferralDistribution(referralTokens);

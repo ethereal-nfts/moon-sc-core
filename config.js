@@ -2,19 +2,24 @@ const { ether } = require("@openzeppelin/test-helpers")
 
 let config = {}
 
-config.MoonToken = {
+config.MoonTokenV2 = {
   name:"MoonCoin",
   symbol:"MOON",
   decimals:18,
   taxBP:400,
   burnBP:400,
-  refBP:400
+  refBP:200
 }
 
 config.MoonStaking = {
-  stakingTaxBP: 100,
-  unstakingTaxBP: 100,
-  startTime: 1593918000
+  startTime: 1594375200,
+  taxBP: 400,
+  burnBP: 400,
+  refBP: 200,
+  referralPayoutBP: 200,
+  referralPoolAdmins: [
+    
+  ]
 }
 
 config.MoonV2Swap = {
@@ -25,6 +30,6 @@ config.MoonV2Swap = {
 }
 
 config.Launch = {
-  startTime: 1593696600
+  startTime: 1594375200
 }
 module.exports = config
