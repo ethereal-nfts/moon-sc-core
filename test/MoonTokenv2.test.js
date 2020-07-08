@@ -94,6 +94,7 @@ describe("MoonTokenV2", function() {
   })
 
   describe("#transfer", function(){
+    //TODO: add tests to confirm burn
     it("Should revert if msg.sender sends more than their balance", async function() {
       await expectRevert(
         this.moonTokenV2.transfer(transferToAccounts[0],ether("10").add(new BN(1)),{from:transferFromAccounts[0]}),
@@ -129,6 +130,7 @@ describe("MoonTokenV2", function() {
   })
 
   describe("#transferFrom", function(){
+    //TODO: add tests to confirm burn
     before(async function() {
       await this.moonTokenV2.approve(approvedSender,ether("3"),{from:transferFromAccounts[1]})
     })
