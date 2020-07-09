@@ -34,8 +34,9 @@ describe("MoonTokenV2", function() {
       tokenParams.taxBP,
       tokenParams.burnBP,
       tokenParams.refBP,
-      this.moonStaking.address,
-      this.moonV2Swap.address
+      tokenParams.bonusBP,
+      owner,
+      this.moonStaking.address
     )
 
     await this.moonStaking.initialize(
@@ -49,37 +50,17 @@ describe("MoonTokenV2", function() {
       this.moonTokenV2.address
     )
 
-    this.moonV2Swap.initialize(
-      1,
-      swapParams.bonusBP,
-      owner,
-      swapParams.whitelistBonusAdmins,
-      swapParams.earlySwapWhitelist,
-      this.moonTokenV1.address,
-      this.moonTokenV2.address
+    await this.moonTokenV2.grantBonusWhitelistMulti(
+      [transferFromAccounts[0],transferFromAccounts[1]],
+      {from: owner}
     )
 
-    await Promise.all([
-      this.moonTokenV1.mint(transferFromAccounts[0],ether('10'),{from: owner}),
-      this.moonTokenV1.mint(transferFromAccounts[1],ether('10'),{from: owner}),
-      this.moonTokenV1.mint(transferFromAccounts[2],ether('10'),{from: owner}),
-      this.moonTokenV1.mint(transferFromAccounts[3],ether('10'),{from: owner})
-    ])
 
-    await Promise.all([
-      this.moonTokenV1.approve(this.moonV2Swap.address,ether('10'),{from: transferFromAccounts[0]}),
-      this.moonTokenV1.approve(this.moonV2Swap.address,ether('10'),{from: transferFromAccounts[1]}),
-      this.moonTokenV1.approve(this.moonV2Swap.address,ether('10'),{from: transferFromAccounts[2]}),
-      this.moonTokenV1.approve(this.moonV2Swap.address,ether('10'),{from: transferFromAccounts[3]})
-    ])
-
-    await Promise.all([
-      this.moonV2Swap.swap(ether('10'),{from: transferFromAccounts[0]}),
-      this.moonV2Swap.swap(ether('10'),{from: transferFromAccounts[1]}),
-      this.moonV2Swap.swap(ether('10'),{from: transferFromAccounts[2]}),
-      this.moonV2Swap.swap(ether('10'),{from: transferFromAccounts[3]})
-    ])
-
+    await this.moonTokenV2.airdrop(
+      transferFromAccounts,
+      [ether("10"),ether("10"),ether("10"),ether("10")],
+      {from: owner}
+    )
   })
 
 
@@ -101,7 +82,7 @@ describe("MoonTokenV2", function() {
     //TODO: add tests to confirm burn
     it("Should revert if msg.sender sends more than their balance", async function() {
       await expectRevert(
-        this.moonTokenV2.transfer(transferToAccounts[0],ether("10").add(new BN(1)),{from:transferFromAccounts[0]}),
+        this.moonTokenV2.transfer(transferToAccounts[0],ether("12").add(new BN(1)),{from:transferFromAccounts[0]}),
         "ERC20: transfer amount exceeds balance"
       )
     })
