@@ -12,7 +12,7 @@ config.MoonTokenV2 = {
 }
 
 config.MoonStaking = {
-  startTime: 1594461600,
+  startTime: 1594548000,
   taxBP: 400,
   burnBP: 400,
   refBP: 200,

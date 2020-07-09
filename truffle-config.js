@@ -8,6 +8,11 @@ module.exports = {
      port: 8545,
      network_id: "*",
     },
+    soliditycoverage: {
+     host: "127.0.0.1",
+     port: 8545,
+     network_id: "*",
+    },
     live: {
       provider: function() {
         return new HDWalletProvider(privateKey, "https://mainnet.infura.io/v3/a07aaaeb8e1c4277a1d9354b5b420548")
@@ -31,5 +36,7 @@ module.exports = {
        evmVersion: "byzantium"
       }
     }
-  }
+  },
+
+  plugins: ["solidity-coverage"]
 }

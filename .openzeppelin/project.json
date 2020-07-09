@@ -3,7 +3,8 @@
   "contracts": {
     "MoonPresale": "MoonPresale",
     "MoonStaking": "MoonStaking",
-    "MoonToken": "MoonToken"
+    "MoonToken": "MoonToken",
+    "MoonTokenV2": "MoonTokenV2"
   },
   "dependencies": {
     "@openzeppelin/contracts-ethereum-package": "^2.5.0"
