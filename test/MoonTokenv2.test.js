@@ -39,18 +39,22 @@ describe("MoonTokenV2", function() {
     )
 
     await this.moonStaking.initialize(
-      stakingParams.startTime,
+      1,
       stakingParams.taxBP,
       stakingParams.burnBP,
       stakingParams.refBP,
       stakingParams.referralPayoutBP,
+      owner,
       stakingParams.referralPoolAdmins,
       this.moonTokenV2.address
     )
 
     this.moonV2Swap.initialize(
+      1,
       swapParams.bonusBP,
+      owner,
       swapParams.whitelistBonusAdmins,
+      swapParams.earlySwapWhitelist,
       this.moonTokenV1.address,
       this.moonTokenV2.address
     )

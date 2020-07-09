@@ -3,9 +3,9 @@ const { add, push, create } = scripts;
 const {publicKey} = require("../privatekey")
 
 async function deploy(options) {
-  add({ contractsData: [{ name: 'MoonStaking', alias: 'MoonStaking' }] });
+  add({ contractsData: [{ name: 'MoonV2Swap', alias: 'MoonV2Swap' }] });
   await push(options);
-  await create(Object.assign({ contractAlias: 'MoonStaking' }, options));
+  await create(Object.assign({ contractAlias: 'MoonV2Swap' }, options));
 }
 
 module.exports = function(deployer, networkName, accounts) {

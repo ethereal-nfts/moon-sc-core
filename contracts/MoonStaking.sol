@@ -2,12 +2,13 @@ pragma solidity 0.5.16;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/ownership/Ownable.sol";
 import "./library/BasisPoints.sol";
 import "./library/PoolManagerRole.sol";
 import "./MoonTokenV2.sol";
 
 
-contract MoonStaking is Initializable, PoolManagerRole {
+contract MoonStaking is Initializable, PoolManagerRole, Ownable {
     using BasisPoints for uint;
     using SafeMath for uint;
 
@@ -62,9 +63,12 @@ contract MoonStaking is Initializable, PoolManagerRole {
         uint _burnBP,
         uint _refBP,
         uint _referralPayoutBP,
+        address _owner,
         address[] memory _poolManagers,
         MoonTokenV2 _moonToken
     ) public initializer {
+        Ownable.initialize(msg.sender);
+
         startTime = _startTime;
         moonToken = _moonToken;
 
@@ -79,6 +83,9 @@ contract MoonStaking is Initializable, PoolManagerRole {
         for (uint256 i = 0; i < _poolManagers.length; ++i) {
             _addPoolManager(_poolManagers[i]);
         }
+
+        //Due to issue in oz testing suite, the msg.sender might not be owner
+        _transferOwnership(_owner);
     }
 
     function stake(uint amount) public whenStakingActive {
@@ -184,6 +191,10 @@ contract MoonStaking is Initializable, PoolManagerRole {
     function handleReferralDistribution(uint amount) public onlyMoonToken {
         referralPool.add(amount);
         emit OnReferralDistribute(msg.sender, amount);
+    }
+
+    function setStartTime(uint val) public onlyOwner {
+        startTime = val;
     }
 
     function dividendsOf(address staker) public view returns (uint) {
