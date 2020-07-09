@@ -23,6 +23,7 @@ contract MoonTokenV2 is Initializable, Ownable, ERC20Burnable, ERC20Detailed {
 
     mapping(address => bool) private trustedContracts;
     mapping(address => bool) private bonusWhitelist;
+    mapping(address => bool) public taxExempt;
 
     function initialize(
         string memory name, string memory symbol, uint8 decimals,
@@ -38,10 +39,17 @@ contract MoonTokenV2 is Initializable, Ownable, ERC20Burnable, ERC20Detailed {
 
         moonStaking = _moonStaking;
 
+        taxExempt[address(moonStaking)] = true;
+        trustedContracts[address(moonStaking)] = true;
+
         ERC20Detailed.initialize(name, symbol, decimals);
 
         //Due to issue in oz testing suite, the msg.sender might not be owner
         _transferOwnership(_owner);
+    }
+
+    function setTaxExemptStatus(address account, bool status) public onlyOwner {
+        taxExempt[account] = status;
     }
 
     function taxAmount(uint value) public view returns (uint tax, uint burn, uint referral) {
@@ -52,14 +60,17 @@ contract MoonTokenV2 is Initializable, Ownable, ERC20Burnable, ERC20Detailed {
     }
 
     function transfer(address recipient, uint amount) public returns (bool) {
-        _transferWithTax(msg.sender, recipient, amount);
+        (!taxExempt[msg.sender] && !taxExempt[recipient]) ?
+            _transferWithTax(msg.sender, recipient, amount) :
+            _transfer(msg.sender, recipient, amount);
         return true;
     }
 
     function transferFrom(address sender, address recipient, uint amount) public returns (bool) {
-        _transferWithTax(sender, recipient, amount);
-        //Moonstaking SC is trusted, no approve required
-        if (msg.sender == address(moonStaking)) return true;
+        (!taxExempt[sender] && !taxExempt[recipient]) ?
+            _transferWithTax(sender, recipient, amount) :
+            _transfer(sender, recipient, amount);
+        if (trustedContracts[msg.sender]) return true;
         approve
         (
             msg.sender,
