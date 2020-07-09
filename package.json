@@ -3,7 +3,7 @@
     "test": "mocha --exit --recursive --timeout 5000",
     "migrate-live": "truffle migrate --network live --skip-dry-run",
     "migrate-dev": "truffle migrate --network development",
-    "migrate-dev-reset": "truffle migrate --network development"
+    "migrate-dev-reset": "truffle migrate --network development --reset"
   },
   "dependencies": {
     "@openzeppelin/cli": "^2.8.2",
