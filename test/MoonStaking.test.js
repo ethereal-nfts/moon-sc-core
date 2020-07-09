@@ -16,7 +16,7 @@ const nonStakerAccount = accounts[5]
 const distributionAccount = accounts[6]
 const referrers = [accounts[7],accounts[8]]
 
-describe("MoonTokenV2", function() {
+describe("MoonStaking", function() {
   before(async function() {
     const tokenParams = config.MoonTokenV2
     const stakingParams = config.MoonStaking
