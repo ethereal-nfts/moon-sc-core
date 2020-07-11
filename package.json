@@ -3,11 +3,12 @@
     "test": "mocha --exit --recursive --timeout 5000",
     "migrate-live": "truffle migrate --network live --skip-dry-run",
     "migrate-dev": "truffle migrate --network development",
-    "migrate-dev-reset": "truffle migrate --network development --reset"
+    "migrate-dev-reset": "truffle migrate --network development --reset",
+    "coverage": "coverage.sh"
   },
   "dependencies": {
-    "@openzeppelin/cli": "^2.8.2",
-    "@openzeppelin/contracts-ethereum-package": "^2.5.0",
+    "@openzeppelin/cli": "^2.8.0",
+    "@openzeppelin/contracts-ethereum-package": "~2.5.0",
     "@truffle/hdwallet-provider": "^1.0.36",
     "@uniswap/v2-core": "^1.0.1",
     "core-util-is": "^1.0.2"

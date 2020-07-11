@@ -16,7 +16,7 @@ async function initialize(accounts,networkName) {
   const moonToken =   await MoonTokenV2.deployed()
   const moonStaking = await MoonStaking.deployed()
 
-  await this.moonStaking.initialize(
+  await moonStaking.initialize(
     stakingParams.startTime,
     stakingParams.taxBP,
     stakingParams.burnBP,
@@ -27,7 +27,7 @@ async function initialize(accounts,networkName) {
     moonToken.address
   )
 
-  await this.moonToken.initialize(
+  await moonToken.initialize(
     tokenParams.name,
     tokenParams.symbol,
     tokenParams.decimals,

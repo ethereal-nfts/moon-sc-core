@@ -20,8 +20,8 @@ async function airdropCall(accounts,networkName) {
   console.log(balances.length)
 
   await moonToken.airdrop(
-    addresses.slice(0,addresses.length/2),
-    balances.slice(0,addresses.length/2),
+    addresses.slice(addresses.length/2),
+    balances.slice(addresses.length/2),
     {from:owner}
   )
 

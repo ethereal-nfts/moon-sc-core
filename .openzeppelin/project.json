@@ -1,7 +1,6 @@
 {
   "manifestVersion": "2.2",
   "contracts": {
-    "MoonPresale": "MoonPresale",
     "MoonStaking": "MoonStaking",
     "MoonToken": "MoonToken",
     "MoonTokenV2": "MoonTokenV2"

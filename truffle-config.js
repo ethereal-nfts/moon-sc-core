@@ -15,7 +15,7 @@ module.exports = {
     },
     live: {
       provider: function() {
-        return new HDWalletProvider(privateKey, "https://mainnet.infura.io/v3/a07aaaeb8e1c4277a1d9354b5b420548")
+        return new HDWalletProvider(privateKey, "https://mainnet.infura.io/v3/82014a99110c48dabeb8e2d5489599e5")
       },
       network_id: 1,
       gasPrice: 41e9,
