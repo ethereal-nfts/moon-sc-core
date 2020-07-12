@@ -936,6 +936,10 @@ contract MoonTokenV2 is Initializable, Ownable, ERC20Burnable, ERC20Detailed {
     }
 }
 
+// File: contracts\MoonStaking.sol
+
+pragma solidity 0.5.16;
+
 
 contract MoonStaking is Initializable, PoolManagerRole, Ownable {
     using BasisPoints for uint;
@@ -1118,8 +1122,12 @@ contract MoonStaking is Initializable, PoolManagerRole, Ownable {
     }
 
     function handleReferralDistribution(uint amount) public onlyMoonToken {
-        referralPool.add(amount);
+        referralPool = referralPool.add(amount);
         emit OnReferralDistribute(msg.sender, amount);
+    }
+
+    function increaseReferralPool(uint amount) public onlyOwner {
+        referralPool = referralPool.add(amount);
     }
 
     function setStartTime(uint val) public onlyOwner {

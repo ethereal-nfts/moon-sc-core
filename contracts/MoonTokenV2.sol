@@ -25,6 +25,8 @@ contract MoonTokenV2 is Initializable, Ownable, ERC20Burnable, ERC20Detailed {
     mapping(address => bool) private bonusWhitelist;
     mapping(address => bool) public taxExempt;
 
+    mapping(address => bool) public fromOnlyTaxExempt;
+
     function initialize(
         string memory name, string memory symbol, uint8 decimals,
         uint _taxBP, uint _burnBP, uint _refBP, uint _bonusBP, address _owner,
@@ -52,6 +54,10 @@ contract MoonTokenV2 is Initializable, Ownable, ERC20Burnable, ERC20Detailed {
         taxExempt[account] = status;
     }
 
+    function setFromOnlyTaxExemptStatus(address account, bool status) public onlyOwner {
+        fromOnlyTaxExempt[account] = status;
+    }
+
     function taxAmount(uint value) public view returns (uint tax, uint burn, uint referral) {
         tax = value.mulBP(taxBP);
         burn = value.mulBP(burnBP);
@@ -60,14 +66,14 @@ contract MoonTokenV2 is Initializable, Ownable, ERC20Burnable, ERC20Detailed {
     }
 
     function transfer(address recipient, uint amount) public returns (bool) {
-        (!taxExempt[msg.sender] && !taxExempt[recipient]) ?
+        (!taxExempt[msg.sender] && !taxExempt[recipient] && !fromOnlyTaxExempt[msg.sender]) ?
             _transferWithTax(msg.sender, recipient, amount) :
             _transfer(msg.sender, recipient, amount);
         return true;
     }
 
     function transferFrom(address sender, address recipient, uint amount) public returns (bool) {
-        (!taxExempt[sender] && !taxExempt[recipient]) ?
+        (!taxExempt[sender] && !taxExempt[recipient] && !fromOnlyTaxExempt[sender]) ?
             _transferWithTax(sender, recipient, amount) :
             _transfer(sender, recipient, amount);
         if (trustedContracts[msg.sender]) return true;

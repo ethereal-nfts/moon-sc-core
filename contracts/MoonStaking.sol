@@ -189,8 +189,12 @@ contract MoonStaking is Initializable, PoolManagerRole, Ownable {
     }
 
     function handleReferralDistribution(uint amount) public onlyMoonToken {
-        referralPool.add(amount);
+        referralPool = referralPool.add(amount);
         emit OnReferralDistribute(msg.sender, amount);
+    }
+
+    function increaseReferralPool(uint amount) public onlyOwner {
+        referralPool = referralPool.add(amount);
     }
 
     function setStartTime(uint val) public onlyOwner {

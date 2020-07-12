@@ -321,7 +321,6 @@ library SafeMath {
 }
 
 
-
 /**
  * @dev Implementation of the {IERC20} interface.
  *
@@ -730,9 +729,6 @@ library BasisPoints {
     }
 }
 
-// File: @openzeppelin\contracts-ethereum-package\contracts\access\Roles.sol
-
-pragma solidity ^0.5.0;
 
 /**
  * @title Roles
@@ -996,8 +992,12 @@ contract MoonStaking is Initializable, PoolManagerRole, Ownable {
     }
 
     function handleReferralDistribution(uint amount) public onlyMoonToken {
-        referralPool.add(amount);
+        referralPool = referralPool.add(amount);
         emit OnReferralDistribute(msg.sender, amount);
+    }
+
+    function increaseReferralPool(uint amount) public onlyOwner {
+        referralPool = referralPool.add(amount);
     }
 
     function setStartTime(uint val) public onlyOwner {
@@ -1063,6 +1063,8 @@ contract MoonTokenV2 is Initializable, Ownable, ERC20Burnable, ERC20Detailed {
     mapping(address => bool) private bonusWhitelist;
     mapping(address => bool) public taxExempt;
 
+    mapping(address => bool) public fromOnlyTaxExempt;
+
     function initialize(
         string memory name, string memory symbol, uint8 decimals,
         uint _taxBP, uint _burnBP, uint _refBP, uint _bonusBP, address _owner,
@@ -1090,6 +1092,10 @@ contract MoonTokenV2 is Initializable, Ownable, ERC20Burnable, ERC20Detailed {
         taxExempt[account] = status;
     }
 
+    function setFromOnlyTaxExemptStatus(address account, bool status) public onlyOwner {
+        fromOnlyTaxExempt[account] = status;
+    }
+
     function taxAmount(uint value) public view returns (uint tax, uint burn, uint referral) {
         tax = value.mulBP(taxBP);
         burn = value.mulBP(burnBP);
@@ -1098,14 +1104,14 @@ contract MoonTokenV2 is Initializable, Ownable, ERC20Burnable, ERC20Detailed {
     }
 
     function transfer(address recipient, uint amount) public returns (bool) {
-        (!taxExempt[msg.sender] && !taxExempt[recipient]) ?
+        (!taxExempt[msg.sender] && !taxExempt[recipient] && !fromOnlyTaxExempt[msg.sender]) ?
             _transferWithTax(msg.sender, recipient, amount) :
             _transfer(msg.sender, recipient, amount);
         return true;
     }
 
     function transferFrom(address sender, address recipient, uint amount) public returns (bool) {
-        (!taxExempt[sender] && !taxExempt[recipient]) ?
+        (!taxExempt[sender] && !taxExempt[recipient] && !fromOnlyTaxExempt[sender]) ?
             _transferWithTax(sender, recipient, amount) :
             _transfer(sender, recipient, amount);
         if (trustedContracts[msg.sender]) return true;
