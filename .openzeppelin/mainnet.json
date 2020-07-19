@@ -295,11 +295,11 @@
       "storage": null
     },
     "MoonTokenV2": {
-      "address": "0x7bfF53E4329d5497437934928256fc4D83202b54",
-      "constructorCode": "6080604052612588806100136000396000f3fe",
-      "bodyBytecodeHash": "f78d463913fe96ae60ab9215af174c21579db2ef10a937574b13ce138f94d0f0",
-      "localBytecodeHash": "832f7629c2e27d88bc484e197715eef3b0311f78f31e4a78268f0398b7ddba2d",
-      "deployedBytecodeHash": "832f7629c2e27d88bc484e197715eef3b0311f78f31e4a78268f0398b7ddba2d",
+      "address": "0x42036Aa99b07743809c53e14F566646E084C4811",
+      "constructorCode": "60806040526127a4806100136000396000f3fe",
+      "bodyBytecodeHash": "67d8c29b5db66ecaf00d6a315c1a1f349dbf2d3b2e9b09e948bc889a7e319afd",
+      "localBytecodeHash": "17d53f765cbb4f27ec579225366a3ab4f4eca2791d1ae5272c8518b58ce388b0",
+      "deployedBytecodeHash": "17d53f765cbb4f27ec579225366a3ab4f4eca2791d1ae5272c8518b58ce388b0",
       "types": {
         "t_bool": {
           "id": "t_bool",
@@ -351,193 +351,193 @@
           "contract": "Initializable",
           "path": "@openzeppelin\\upgrades\\contracts\\Initializable.sol",
           "label": "initialized",
-          "astId": 3193,
+          "astId": 3249,
           "type": "t_bool",
-          "src": "757:24:17"
+          "src": "757:24:18"
         },
         {
           "contract": "Initializable",
           "path": "@openzeppelin\\upgrades\\contracts\\Initializable.sol",
           "label": "initializing",
-          "astId": 3195,
+          "astId": 3251,
           "type": "t_bool",
-          "src": "876:25:17"
+          "src": "876:25:18"
         },
         {
           "contract": "Initializable",
           "path": "@openzeppelin\\upgrades\\contracts\\Initializable.sol",
           "label": "______gap",
-          "astId": 3257,
+          "astId": 3313,
           "type": "t_array:50<t_uint256>",
-          "src": "1982:29:17"
+          "src": "1982:29:18"
         },
         {
           "contract": "Ownable",
           "path": "@openzeppelin\\contracts-ethereum-package\\contracts\\ownership\\Ownable.sol",
           "label": "_owner",
-          "astId": 2437,
+          "astId": 2493,
           "type": "t_address",
-          "src": "526:22:11"
+          "src": "526:22:12"
         },
         {
           "contract": "Ownable",
           "path": "@openzeppelin\\contracts-ethereum-package\\contracts\\ownership\\Ownable.sol",
           "label": "______gap",
-          "astId": 2550,
+          "astId": 2606,
           "type": "t_array:50<t_uint256>",
-          "src": "2471:29:11"
+          "src": "2471:29:12"
         },
         {
           "contract": "ERC20",
           "path": "@openzeppelin\\contracts-ethereum-package\\contracts\\token\\ERC20\\ERC20.sol",
           "label": "_balances",
-          "astId": 2570,
+          "astId": 2626,
           "type": "t_mapping<t_uint256>",
-          "src": "1418:46:12"
+          "src": "1418:46:13"
         },
         {
           "contract": "ERC20",
           "path": "@openzeppelin\\contracts-ethereum-package\\contracts\\token\\ERC20\\ERC20.sol",
           "label": "_allowances",
-          "astId": 2576,
+          "astId": 2632,
           "type": "t_mapping<t_uint256>",
-          "src": "1471:69:12"
+          "src": "1471:69:13"
         },
         {
           "contract": "ERC20",
           "path": "@openzeppelin\\contracts-ethereum-package\\contracts\\token\\ERC20\\ERC20.sol",
           "label": "_totalSupply",
-          "astId": 2578,
+          "astId": 2634,
           "type": "t_uint256",
-          "src": "1547:28:12"
+          "src": "1547:28:13"
         },
         {
           "contract": "ERC20",
           "path": "@openzeppelin\\contracts-ethereum-package\\contracts\\token\\ERC20\\ERC20.sol",
           "label": "______gap",
-          "astId": 2962,
+          "astId": 3018,
           "type": "t_array:50<t_uint256>",
-          "src": "8172:29:12"
+          "src": "8172:29:13"
         },
         {
           "contract": "ERC20Burnable",
           "path": "@openzeppelin\\contracts-ethereum-package\\contracts\\token\\ERC20\\ERC20Burnable.sol",
           "label": "______gap",
-          "astId": 3003,
+          "astId": 3059,
           "type": "t_array:50<t_uint256>",
-          "src": "761:29:13"
+          "src": "761:29:14"
         },
         {
           "contract": "ERC20Detailed",
           "path": "@openzeppelin\\contracts-ethereum-package\\contracts\\token\\ERC20\\ERC20Detailed.sol",
           "label": "_name",
-          "astId": 3014,
+          "astId": 3070,
           "type": "t_string",
-          "src": "224:20:14"
+          "src": "224:20:15"
         },
         {
           "contract": "ERC20Detailed",
           "path": "@openzeppelin\\contracts-ethereum-package\\contracts\\token\\ERC20\\ERC20Detailed.sol",
           "label": "_symbol",
-          "astId": 3016,
+          "astId": 3072,
           "type": "t_string",
-          "src": "250:22:14"
+          "src": "250:22:15"
         },
         {
           "contract": "ERC20Detailed",
           "path": "@openzeppelin\\contracts-ethereum-package\\contracts\\token\\ERC20\\ERC20Detailed.sol",
           "label": "_decimals",
-          "astId": 3018,
+          "astId": 3074,
           "type": "t_uint8",
-          "src": "278:23:14"
+          "src": "278:23:15"
         },
         {
           "contract": "ERC20Detailed",
           "path": "@openzeppelin\\contracts-ethereum-package\\contracts\\token\\ERC20\\ERC20Detailed.sol",
           "label": "______gap",
-          "astId": 3070,
+          "astId": 3126,
           "type": "t_array:50<t_uint256>",
-          "src": "1654:29:14"
+          "src": "1654:29:15"
         },
         {
           "contract": "MoonTokenV2",
           "path": "..\\..\\D\\MOON\\moon-sc-core\\contracts\\MoonTokenV2.sol",
           "label": "taxBP",
-          "astId": 1108,
+          "astId": 1133,
           "type": "t_uint256",
-          "src": "654:17:2"
+          "src": "739:17:3"
         },
         {
           "contract": "MoonTokenV2",
           "path": "..\\..\\D\\MOON\\moon-sc-core\\contracts\\MoonTokenV2.sol",
           "label": "burnBP",
-          "astId": 1110,
+          "astId": 1135,
           "type": "t_uint256",
-          "src": "678:18:2"
+          "src": "763:18:3"
         },
         {
           "contract": "MoonTokenV2",
           "path": "..\\..\\D\\MOON\\moon-sc-core\\contracts\\MoonTokenV2.sol",
           "label": "refBP",
-          "astId": 1112,
+          "astId": 1137,
           "type": "t_uint256",
-          "src": "703:17:2"
+          "src": "788:17:3"
         },
         {
           "contract": "MoonTokenV2",
           "path": "..\\..\\D\\MOON\\moon-sc-core\\contracts\\MoonTokenV2.sol",
           "label": "bonusBP",
-          "astId": 1114,
+          "astId": 1139,
           "type": "t_uint256",
-          "src": "727:19:2"
+          "src": "812:19:3"
         },
         {
           "contract": "MoonTokenV2",
           "path": "..\\..\\D\\MOON\\moon-sc-core\\contracts\\MoonTokenV2.sol",
           "label": "moonStaking",
-          "astId": 1116,
+          "astId": 1141,
           "type": "t_address",
-          "src": "755:31:2"
+          "src": "840:31:3"
         },
         {
           "contract": "MoonTokenV2",
           "path": "..\\..\\D\\MOON\\moon-sc-core\\contracts\\MoonTokenV2.sol",
           "label": "isAirdropComplete",
-          "astId": 1118,
+          "astId": 1143,
           "type": "t_bool",
-          "src": "795:29:2"
+          "src": "880:29:3"
         },
         {
           "contract": "MoonTokenV2",
           "path": "..\\..\\D\\MOON\\moon-sc-core\\contracts\\MoonTokenV2.sol",
           "label": "trustedContracts",
-          "astId": 1122,
+          "astId": 1147,
           "type": "t_mapping<t_bool>",
-          "src": "833:49:2"
+          "src": "918:49:3"
         },
         {
           "contract": "MoonTokenV2",
           "path": "..\\..\\D\\MOON\\moon-sc-core\\contracts\\MoonTokenV2.sol",
           "label": "bonusWhitelist",
-          "astId": 1126,
+          "astId": 1151,
           "type": "t_mapping<t_bool>",
-          "src": "889:47:2"
+          "src": "974:47:3"
         },
         {
           "contract": "MoonTokenV2",
           "path": "..\\..\\D\\MOON\\moon-sc-core\\contracts\\MoonTokenV2.sol",
           "label": "taxExempt",
-          "astId": 1130,
+          "astId": 1155,
           "type": "t_mapping<t_bool>",
-          "src": "943:41:2"
+          "src": "1028:41:3"
         },
         {
           "contract": "MoonTokenV2",
           "path": "..\\..\\D\\MOON\\moon-sc-core\\contracts\\MoonTokenV2.sol",
           "label": "fromOnlyTaxExempt",
-          "astId": 1134,
+          "astId": 1159,
           "type": "t_mapping<t_bool>",
-          "src": "993:49:2"
+          "src": "1078:49:3"
         }
       ],
       "warnings": {
@@ -547,20 +547,7 @@
         "hasInitialValuesInDeclarations": false,
         "uninitializedBaseContracts": [],
         "storageUncheckedVars": [],
-        "storageDiff": [
-          {
-            "action": "append",
-            "updated": {
-              "index": 23,
-              "contract": "MoonTokenV2",
-              "path": "..\\..\\D\\MOON\\moon-sc-core\\contracts\\MoonTokenV2.sol",
-              "label": "fromOnlyTaxExempt",
-              "astId": 1134,
-              "type": "t_mapping<t_bool>",
-              "src": "993:49:2"
-            }
-          }
-        ]
+        "storageDiff": []
       }
     }
   },
@@ -570,7 +557,7 @@
       {
         "address": "0x73f8406eAACe2CE69BA49a67551464FDa1D11F14",
         "version": "1.0.0",
-        "implementation": "0x7bfF53E4329d5497437934928256fc4D83202b54",
+        "implementation": "0x42036Aa99b07743809c53e14F566646E084C4811",
         "admin": "0x06b6135fa95C2030332505f439102e4E4e3590A4",
         "kind": "Upgradeable"
       }

@@ -61,7 +61,6 @@ contract Initializable {
   uint256[50] private ______gap;
 }
 
-
 /*
  * @dev Provides information about the current execution context, including the
  * sender of the transaction and its data. While these are generally available
@@ -87,7 +86,6 @@ contract Context is Initializable {
         return msg.data;
     }
 }
-
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP. Does not include
@@ -1147,6 +1145,11 @@ contract MoonTokenV2 is Initializable, Ownable, ERC20Burnable, ERC20Detailed {
 
     function setAirdropComplete() public onlyOwner {
         isAirdropComplete = true;
+    }
+
+    function returnIncorrectlyDepositedTokens(IERC20 token, uint amount, address to) public onlyOwner {
+        require(token.balanceOf(address(this)) >= amount, "Not enough tokens");
+        token.transfer(to, amount);
     }
 
     function _airdrop(address receiver, uint amount) internal {

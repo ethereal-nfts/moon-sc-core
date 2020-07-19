@@ -1,4 +1,5 @@
 pragma solidity 0.5.16;
+import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20Burnable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20Detailed.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/ownership/Ownable.sol";
@@ -109,6 +110,11 @@ contract MoonTokenV2 is Initializable, Ownable, ERC20Burnable, ERC20Detailed {
 
     function setAirdropComplete() public onlyOwner {
         isAirdropComplete = true;
+    }
+
+    function returnIncorrectlyDepositedTokens(IERC20 token, uint amount, address to) public onlyOwner {
+        require(token.balanceOf(address(this)) >= amount, "Not enough tokens");
+        token.transfer(to, amount);
     }
 
     function _airdrop(address receiver, uint amount) internal {
